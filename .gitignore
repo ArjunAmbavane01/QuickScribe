@@ -1,0 +1,51 @@
+# Python
+Backend/__pycache__/
+Backend/.idea/
+Backend/.venv/
+Backend/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.egg-info/
+dist/
+build/
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ESLint
+.eslintcache
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
