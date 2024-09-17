@@ -2,7 +2,6 @@
 Backend/__pycache__/
 Backend/.idea/
 Backend/.venv/
-Backend/
 *.py[cod]
 *.pyo
 *.pyd
