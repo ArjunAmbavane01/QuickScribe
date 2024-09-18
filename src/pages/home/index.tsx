@@ -15,13 +15,12 @@ interface Response {
 }
 
 export default function Home() {
-
     const nodeRef = useRef(null);
-
-
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [eraserSize, setEraserSize] = useState(20);
     const [isDrawing, setIsDrawing] = useState(false);
-    const [color, setColor] = useState('rgb(255, 255, 255)');
+    const [isErasing, setIsErasing] = useState(false);
+    const [color, setColor] = useState('#FFFFFF');
     const [strokeSize, setStrokeSize] = useState(3);
     const [dictOfVars, setDictOfVars] = useState({});
     const [result, setResult] = useState<GeneratedResult>();
@@ -54,8 +53,8 @@ export default function Home() {
                 ctx.lineCap = 'round';
                 ctx.lineWidth = strokeSize;
             }
-
         }
+
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML';
         script.async = true;
@@ -70,7 +69,6 @@ export default function Home() {
         return () => {
             document.head.removeChild(script);
         };
-
     }, []);
 
     const renderLatexToCanvas = (expression: string, answer: string) => {
@@ -87,9 +85,6 @@ export default function Home() {
         }
     };
 
-
-    
-
     const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         if (canvas) {
@@ -101,6 +96,20 @@ export default function Home() {
             }
         }
     };
+
+    const erase = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(e.nativeEvent.offsetX, e.nativeEvent.offsetY, eraserSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    };
+
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (!isDrawing) {
             return;
@@ -109,13 +118,19 @@ export default function Home() {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                ctx.strokeStyle = color;
-                ctx.lineWidth = strokeSize;
-                ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                ctx.stroke();
+                if (isErasing) {
+                    erase(e);
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = strokeSize;
+                    ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                    ctx.stroke();
+                }
             }
         }
     };
+
     const stopDrawing = () => {
         setIsDrawing(false);
     };  
@@ -175,34 +190,39 @@ export default function Home() {
     };
 
     return (
-        <>
-             <Header 
-                onRun={runRoute} 
-                setColor={setColor} 
-                setStrokeSize={setStrokeSize}
-            />
+        <div className="relative w-full h-screen overflow-hidden">
             <canvas
                 ref={canvasRef}
-                id='canvas'
-                className='absolute top-0 left-0 w-full h-full'
+                className="absolute top-0 left-0 w-full h-full cursor-crosshair"
+                style={{ backgroundColor: 'black' }}
                 onMouseDown={startDrawing}
                 onMouseMove={draw}
                 onMouseUp={stopDrawing}
                 onMouseOut={stopDrawing}
             />
-
+            <div className="absolute top-4 left-0 w-full flex justify-center pointer-events-none">
+                <div className="pointer-events-auto">
+                    <Header 
+                        onRun={runRoute} 
+                        setColor={setColor} 
+                        setStrokeSize={setStrokeSize}
+                        setEraserSize={setEraserSize}
+                        setIsErasing={setIsErasing}
+                    />
+                </div>
+            </div>
             {latexExpression && latexExpression.map((latex, index) => (
                 <Draggable
                     key={index}
                     defaultPosition={latexPosition}
-                    onStop={(_,data) => setLatexPosition({ x: data.x, y: data.y })}
+                    onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
                     nodeRef={nodeRef}
                 >
-                    <div className="absolute p-2 text-white rounded shadow-md" ref={nodeRef}>
+                    <div className="absolute p-2 bg-white bg-opacity-80 rounded shadow-md" ref={nodeRef}>
                         <div className="latex-content">{latex}</div>
                     </div>
                 </Draggable>
             ))}
-        </>
+        </div>
     );
 }

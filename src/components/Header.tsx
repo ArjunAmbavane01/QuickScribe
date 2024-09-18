@@ -1,25 +1,35 @@
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import ImageButton from './ImageButton'; 
 import PenButton from './PenButton'; 
+import EraseButton from './EraseButton'; 
+import { Pen, Eraser, Shapes, Type } from 'lucide-react';
 
+interface HeaderProps {
+    onRun: () => void;
+    setColor: (color: string) => void;
+    setStrokeSize: (size: number) => void;
+    setEraserSize: (size: number) => void;
+    setIsErasing: (isErasing: boolean) => void;
+}
 
-const Header: React.FC<{ onRun: () => void; setColor: (color: string) => void; setStrokeSize: (size: number) => void }> = ({ onRun, setColor, setStrokeSize }) => {
+const Header: React.FC<HeaderProps> = ({ onRun, setColor, setStrokeSize, setEraserSize, setIsErasing}) => {
+
     return (
-        <div className='grid grid-cols-3 gap-2 justify-center'>  
-            <div></div>
-            <Card className='z-20 flex flex-col items-center p-4 bg-black mt-2 text-white'>
-                <div className='flex flex-row justify-around w-full'>  
-                    <PenButton src="https://img.icons8.com/?size=100&id=54032&format=png&color=000000" alt="Pen" setColor={setColor} setStrokeSize={setStrokeSize}/> 
-                    <ImageButton src="https://img.icons8.com/?size=100&id=22280&format=png&color=000000" alt="Shapes" />
-                    <ImageButton src="src/assets/icons8-text-47.png" alt="Text" />
-                </div>
-            </Card>
+        <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-md shadow-lg shadow-indigo-700/40">
+            <PenButton setColor={setColor} setStrokeSize={setStrokeSize} setIsErasing={setIsErasing} >
+                <Pen className="w-5 h-5" />
+            </PenButton>
+            <EraseButton setEraserSize={setEraserSize} setIsErasing={setIsErasing} >
+                <Eraser className="w-5 h-5" />
+            </EraseButton>
+            <Button variant="ghost" size="icon" className="p-1">
+                <Shapes className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="p-1">
+                <Type className="w-5 h-5" />
+            </Button>
             <Button
                 onClick={onRun}
-                className='mt-2 z-20 bg-black text-white'
-                variant='default'
-                color='white'
+                className="bg-indigo-600 hover:bg-indigo-800 text-white font-bold rounded-sm px-4 py-1"
             >
                 Run
             </Button>

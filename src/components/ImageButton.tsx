@@ -17,7 +17,7 @@ const ImageButton: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
         <div onClick={handleClick} className='flex flex-col items-center cursor-pointer'>
 
 <Popover>
-    <PopoverTrigger><img src={src} alt={alt} height={50} width={50} /></PopoverTrigger>
+    <PopoverTrigger><img src={src} alt={alt} height={35} width={35} /></PopoverTrigger>
     <PopoverContent>Place content for the popover here.</PopoverContent>
 </Popover>
         </div>
