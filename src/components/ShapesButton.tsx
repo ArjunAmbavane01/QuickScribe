@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { Circle, Square, RectangleHorizontal, Triangle } from 'lucide-react';
+
 
 interface ShapesButtonProps {
     children: React.ReactNode;
@@ -14,11 +16,11 @@ const colorPalette = [
     '#FFFF00', '#008000', '#0000FF', '#800080'
 ];
 
-const ShapesButton: React.FC<ShapesButtonProps> = ({ 
-    children, 
-    setSelectedShape, 
-    setShapeOutlineColor, 
-    setShapeFillColor 
+const ShapesButton: React.FC<ShapesButtonProps> = ({
+    children,
+    setSelectedShape,
+    setShapeOutlineColor,
+    setShapeFillColor
 }) => {
     const [outlineColor, setOutlineColor] = useState('#000000');
     const [fillColor, setFillColor] = useState('#FFFFFF');
@@ -45,21 +47,16 @@ const ShapesButton: React.FC<ShapesButtonProps> = ({
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-85">
-                <div className="grid gap-3">
-                    <div className="grid gap-2">
-                        <div className="flex flex-wrap gap-3 justify-between">
-                            {['Circle', 'Square', 'Rectangle', 'Triangle'].map((shape) => (
-                                <Button 
-                                    key={shape} 
-                                    onClick={() => handleShapeSelect(shape)}
-                                    variant="outline"
-                                >
-                                    {shape}
-                                </Button>
-                            ))}
+                <div className="grid gap-1">
+                    <div className="grid gap-1">
+                        <div className="flex flex-wrap gap-1 justify-between">
+                            <Circle className="w-7 h-7" onClick={() => handleShapeSelect('Circle')} />
+                            <Square className="w-7 h-7" onClick={() => handleShapeSelect('Square')} />
+                            <RectangleHorizontal className="w-7 h-7" onClick={() => handleShapeSelect('Rectangle')} />
+                            <Triangle className="w-7 h-7" onClick={() => handleShapeSelect('Triangle')} />
                         </div>
-                        <div>Outline Color:</div>
-                        <div className="flex flex-wrap gap-3 justify-between">
+                        <div>Outline :</div>
+                        <div className="flex flex-wrap gap-2 justify-between">
                             {colorPalette.map((color) => (
                                 <button
                                     key={color}
@@ -70,8 +67,8 @@ const ShapesButton: React.FC<ShapesButtonProps> = ({
                             ))}
                         </div>
                     </div>
-                    <div>Fill Color:</div>
-                    <div className="flex flex-wrap gap-3 justify-between">
+                    <div>Fill :</div>
+                    <div className="flex flex-wrap gap-2 justify-between">
                         {colorPalette.map((color) => (
                             <button
                                 key={color}

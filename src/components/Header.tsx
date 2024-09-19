@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import PenButton from './PenButton'; 
 import EraseButton from './EraseButton'; 
 import ShapesButton from './ShapesButton'; 
-import { Pen, Eraser, Shapes, Type } from 'lucide-react';
+import { Pen, Eraser, Shapes,Type } from 'lucide-react';
 
 interface HeaderProps {
     onRun: () => void;
@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
 
     return (
-        <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-md shadow-lg shadow-indigo-700/40">
+        <div className="flex items-center space-x-2 px-4 py-2 bg-white rounded-md shadow-xl shadow-indigo-700/40">
             <PenButton setColor={setColor} setStrokeSize={setStrokeSize} setIsErasing={setIsErasing} >
                 <Pen className="w-5 h-5" />
             </PenButton>
