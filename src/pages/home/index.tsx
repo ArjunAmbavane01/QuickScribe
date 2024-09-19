@@ -26,6 +26,12 @@ export default function Home() {
     const [result, setResult] = useState<GeneratedResult>();
     const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
     const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
+    const [selectedShape, setSelectedShape] = useState<string | null>(null);
+    const [shapeOutlineColor, setShapeOutlineColor] = useState('#000000');
+    const [shapeFillColor, setShapeFillColor] = useState('#FFFFFF');
+    const [isDrawingShape, setIsDrawingShape] = useState(false);
+    const [shapeStartPoint, setShapeStartPoint] = useState<{ x: number; y: number } | null>(null);
+    const [canvasState, setCanvasState] = useState<ImageData | null>(null);
 
     useEffect(() => {
         if (latexExpression.length > 0 && window.MathJax) {
@@ -47,6 +53,7 @@ export default function Home() {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
+                setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
                 canvas.style.background = 'black';
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight - canvas.offsetTop;
@@ -71,6 +78,7 @@ export default function Home() {
         };
     }, []);
 
+
     const renderLatexToCanvas = (expression: string, answer: string) => {
         const latex = `\\(${expression} = ${answer}\\)`;
         setLatexExpression([...latexExpression, latex]);
@@ -90,9 +98,15 @@ export default function Home() {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                ctx.beginPath();
-                ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                setIsDrawing(true);
+                if (selectedShape) {
+                    setIsDrawingShape(true);
+                    setShapeStartPoint({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
+                    setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                    setIsDrawing(true);
+                }
             }
         }
     };
@@ -111,29 +125,136 @@ export default function Home() {
     };
 
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!isDrawing) {
-            return;
-        }
         const canvas = canvasRef.current;
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                if (isErasing) {
-                    erase(e);
-                } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = strokeSize;
-                    ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                    ctx.stroke();
+                if (isDrawingShape && shapeStartPoint && canvasState) {
+                    ctx.putImageData(canvasState, 0, 0);
+                    drawShapePreview(ctx, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                } else if (isDrawing) {
+                    if (isErasing) {
+                        erase(e);
+                    } else {
+                        ctx.globalCompositeOperation = 'source-over';
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = strokeSize;
+                        ctx.lineTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                        ctx.stroke();
+                    }
                 }
             }
         }
     };
 
-    const stopDrawing = () => {
+    const stopDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (isDrawingShape && shapeStartPoint) {
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    drawShape(ctx, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+                    setSelectedShape(null); // Reset shape selection after drawing
+                }
+            }
+        }
         setIsDrawing(false);
-    };  
+        setIsDrawingShape(false);
+        setShapeStartPoint(null);
+        
+        // Update canvas state after drawing
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            }
+        }
+    }; 
+
+    const drawShapePreview = (ctx: CanvasRenderingContext2D, endX: number, endY: number) => {
+        if (!shapeStartPoint) return;
+
+        ctx.save();
+        ctx.strokeStyle = shapeOutlineColor;
+        ctx.fillStyle = shapeFillColor;
+        ctx.lineWidth = strokeSize;
+
+        const width = endX - shapeStartPoint.x;
+        const height = endY - shapeStartPoint.y;
+
+        switch (selectedShape) {
+            case 'Circle':
+                const radius = Math.sqrt(width * width + height * height);
+                ctx.beginPath();
+                ctx.arc(shapeStartPoint.x, shapeStartPoint.y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+                break;
+            case 'Square':
+                const size = Math.max(Math.abs(width), Math.abs(height));
+                ctx.fillRect(shapeStartPoint.x, shapeStartPoint.y, size, size);
+                ctx.strokeRect(shapeStartPoint.x, shapeStartPoint.y, size, size);
+                break;
+            case 'Rectangle':
+                ctx.fillRect(shapeStartPoint.x, shapeStartPoint.y, width, height);
+                ctx.strokeRect(shapeStartPoint.x, shapeStartPoint.y, width, height);
+                break;
+            case 'Triangle':
+                ctx.beginPath();
+                ctx.moveTo(shapeStartPoint.x, shapeStartPoint.y);
+                ctx.lineTo(shapeStartPoint.x + width, shapeStartPoint.y + height);
+                ctx.lineTo(shapeStartPoint.x - width, shapeStartPoint.y + height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+        }
+
+        ctx.restore();
+    };
+
+    const drawShape = (ctx: CanvasRenderingContext2D, endX: number, endY: number) => {
+        if (!shapeStartPoint) return;
+
+        ctx.save();
+        ctx.strokeStyle = shapeOutlineColor;
+        ctx.fillStyle = shapeFillColor;
+        ctx.lineWidth = strokeSize;
+
+        const width = endX - shapeStartPoint.x;
+        const height = endY - shapeStartPoint.y;
+
+        switch (selectedShape) {
+            case 'Circle':
+                const radius = Math.sqrt(width * width + height * height);
+                ctx.beginPath();
+                ctx.arc(shapeStartPoint.x, shapeStartPoint.y, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+                break;
+            case 'Square':
+                const size = Math.max(Math.abs(width), Math.abs(height));
+                ctx.fillRect(shapeStartPoint.x, shapeStartPoint.y, size, size);
+                ctx.strokeRect(shapeStartPoint.x, shapeStartPoint.y, size, size);
+                break;
+            case 'Rectangle':
+                ctx.fillRect(shapeStartPoint.x, shapeStartPoint.y, width, height);
+                ctx.strokeRect(shapeStartPoint.x, shapeStartPoint.y, width, height);
+                break;
+            case 'Triangle':
+                ctx.beginPath();
+                ctx.moveTo(shapeStartPoint.x, shapeStartPoint.y);
+                ctx.lineTo(shapeStartPoint.x + width, shapeStartPoint.y + height);
+                ctx.lineTo(shapeStartPoint.x - width, shapeStartPoint.y + height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                break;
+        }
+
+        ctx.restore();
+    };
 
     const runRoute = async () => {
         const canvas = canvasRef.current;
@@ -208,6 +329,9 @@ export default function Home() {
                         setStrokeSize={setStrokeSize}
                         setEraserSize={setEraserSize}
                         setIsErasing={setIsErasing}
+                        setSelectedShape={setSelectedShape}
+                        setShapeOutlineColor={setShapeOutlineColor}
+                        setShapeFillColor={setShapeFillColor}
                     />
                 </div>
             </div>
