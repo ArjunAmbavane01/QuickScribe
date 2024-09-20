@@ -209,6 +209,12 @@ export default function Home() {
                 ctx.fill();
                 ctx.stroke();
                 break;
+            case 'Line':
+                ctx.beginPath();
+                ctx.moveTo(shapeStartPoint.x, shapeStartPoint.y);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                break;
         }
 
         ctx.restore();
@@ -249,6 +255,12 @@ export default function Home() {
                 ctx.lineTo(shapeStartPoint.x - width, shapeStartPoint.y + height);
                 ctx.closePath();
                 ctx.fill();
+                ctx.stroke();
+                break;
+            case 'Line':
+                ctx.beginPath();
+                ctx.moveTo(shapeStartPoint.x, shapeStartPoint.y);
+                ctx.lineTo(endX, endY);
                 ctx.stroke();
                 break;
         }

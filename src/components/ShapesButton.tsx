@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Circle, Square, RectangleHorizontal, Triangle } from 'lucide-react';
+import { Circle, Square, RectangleHorizontal, Triangle, Minus } from 'lucide-react';
 
 
 interface ShapesButtonProps {
@@ -50,10 +50,11 @@ const ShapesButton: React.FC<ShapesButtonProps> = ({
                 <div className="grid gap-1">
                     <div className="grid gap-1">
                         <div className="flex flex-wrap gap-1 justify-between">
-                            <Circle className="w-7 h-7" onClick={() => handleShapeSelect('Circle')} />
-                            <Square className="w-7 h-7" onClick={() => handleShapeSelect('Square')} />
-                            <RectangleHorizontal className="w-7 h-7" onClick={() => handleShapeSelect('Rectangle')} />
-                            <Triangle className="w-7 h-7" onClick={() => handleShapeSelect('Triangle')} />
+                            <Minus className={`w-7 h-7 p-2px hover:scale-110 hover:bg-stone-100 transition-transform rounded-sm`} onClick={() => handleShapeSelect('Line')} />
+                            <Circle className={`w-7 h-7 p-2px hover:scale-110 hover:bg-stone-100 transition-transform rounded-sm`} onClick={() => handleShapeSelect('Circle')} />
+                            <Square className={`w-7 h-7 p-2px hover:scale-110 hover:bg-stone-100 transition-transform rounded-sm`} onClick={() => handleShapeSelect('Square')} />
+                            <RectangleHorizontal className={`w-7 h-7 p-2px hover:scale-110 hover:bg-stone-100 transition-transform rounded-sm`} onClick={() => handleShapeSelect('Rectangle')} />
+                            <Triangle className={`w-7 h-7 p-2px hover:scale-110 hover:bg-stone-100 transition-transform rounded-sm`} onClick={() => handleShapeSelect('Triangle')} />
                         </div>
                         <div>Outline :</div>
                         <div className="flex flex-wrap gap-2 justify-between">
