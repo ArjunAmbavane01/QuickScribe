@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import PenButton from './PenButton'; 
 import EraseButton from './EraseButton'; 
 import ShapesButton from './ShapesButton'; 
-import { Pen, Eraser, Shapes,Type } from 'lucide-react';
+import { Pen, Eraser, Shapes, Type, Loader2 } from 'lucide-react';
 
 interface HeaderProps {
     onRun: () => void;
@@ -13,6 +13,7 @@ interface HeaderProps {
     setSelectedShape: (shape: string) => void;
     setShapeOutlineColor: (color: string) => void;
     setShapeFillColor: (color: string) => void;
+    isCalculating: boolean; 
 }
 
 const Header: React.FC<HeaderProps> = ({ 
@@ -23,7 +24,8 @@ const Header: React.FC<HeaderProps> = ({
     setIsErasing,
     setSelectedShape,
     setShapeOutlineColor,
-    setShapeFillColor
+    setShapeFillColor,
+    isCalculating
 }) => {
 
     return (
@@ -46,9 +48,13 @@ const Header: React.FC<HeaderProps> = ({
             </Button>
             <Button
                 onClick={onRun}
-                className="bg-indigo-600 hover:bg-indigo-800 text-white font-bold rounded-sm px-4 py-1"
+                className="bg-indigo-800 hover:bg-indigo-500 text-white font-bold rounded-sm px-4 py-1 "
             >
-                Run
+               {isCalculating ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+                'Run'
+            )}
             </Button>
         </div>
     );

@@ -2,7 +2,8 @@ import Header from '@/components/Header';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Draggable from 'react-draggable';
-
+import { Undo, Redo } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface GeneratedResult {
     expression: string;
     answer: string;
@@ -33,6 +34,7 @@ export default function Home() {
     const [shapeStartPoint, setShapeStartPoint] = useState<{ x: number; y: number } | null>(null);
     const [canvasStates, setCanvasStates] = useState<ImageData[]>([]);
     const [currentStateIndex, setCurrentStateIndex] = useState(-1);
+    const [isCalculating, setIsCalculating] = useState(false);
 
     useEffect(() => {
         if (latexExpression.length > 0 && window.MathJax) {
@@ -316,28 +318,30 @@ export default function Home() {
     };
 
     const runRoute = async () => {
+        setIsCalculating(true);
         const canvas = canvasRef.current;
     
         if (canvas) {
-            const response = await axios({
-                method: 'post',
-                url: `${import.meta.env.VITE_API_URL}/calculate`,
-                data: {
-                    image: canvas.toDataURL('image/png'),
-                    dict_of_vars: dictOfVars
-                }
-            });
-
-            const resp = await response.data;
-            console.log('Response', resp);
-            resp.data.forEach((data: Response) => {
-                if (data.assign === true) {
-                    setDictOfVars({
-                        ...dictOfVars,
-                        [data.expr]: data.result
-                    });
-                }
-            });
+            try {
+                const response = await axios({
+                    method: 'post',
+                    url: `${import.meta.env.VITE_API_URL}/calculate`,
+                    data: {
+                        image: canvas.toDataURL('image/png'),
+                        dict_of_vars: dictOfVars
+                    }
+                });
+    
+                const resp = await response.data;
+                console.log('Response', resp);
+                resp.data.forEach((data: Response) => {
+                    if (data.assign === true) {
+                        setDictOfVars(prevDict => ({
+                            ...prevDict,
+                            [data.expr]: data.result
+                        }));
+                    }
+                });
             const ctx = canvas.getContext('2d');
             const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
             let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
@@ -366,8 +370,13 @@ export default function Home() {
                     });
                 }, 1000);
             });
+        } catch (error) {
+            console.error('Error during calculation:', error);
+        } finally {
+            setIsCalculating(false);
         }
-    };
+    }
+};
 
     return (
         <div className="relative w-full h-screen overflow-hidden">
@@ -391,36 +400,55 @@ export default function Home() {
                         setSelectedShape={setSelectedShape}
                         setShapeOutlineColor={setShapeOutlineColor}
                         setShapeFillColor={setShapeFillColor}
+                        isCalculating={isCalculating}
                     />
                 </div>
             </div>
             <div className="absolute bottom-4 left-4 flex space-x-2">
-            <button 
-                onClick={undo} 
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                disabled={currentStateIndex <= 0}
-            >
-                Undo
-            </button>
-            <button 
-                onClick={redo} 
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                disabled={currentStateIndex >= canvasStates.length - 1}
-            >
-                Redo
-            </button>
-        </div>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button 
+                                onClick={undo} 
+                                className="flex items-center justify-center bg-gray-300 hover:bg-zinc-50 text-black font-bold py-2 px-2 rounded"
+                                disabled={currentStateIndex <= 0}
+                            >
+                                <Undo/>
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Undo</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button 
+                                onClick={redo} 
+                                className="flex items-center justify-center bg-gray-300 hover:bg-zinc-50 text-black font-bold py-2 px-2 rounded"
+                                disabled={currentStateIndex >= canvasStates.length - 1}
+                            >
+                                <Redo/>
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Redo</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </div>
         {latexExpression && latexExpression.map((latex, index) => (
                 <Draggable
-                    key={index}
-                    defaultPosition={latexPosition}
-                    onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
-                    nodeRef={nodeRef}
-                >
-                    <div className="absolute p-2 bg-white bg-opacity-80 rounded shadow-md" ref={nodeRef}>
-                        <div className="latex-content">{latex}</div>
-                    </div>
-                </Draggable>
+                key={index}
+                defaultPosition={latexPosition}
+                onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
+                nodeRef={nodeRef}
+            >
+                <div className="absolute bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-3 shadow-lg" ref={nodeRef}>
+    <div className="text-white latex-content">{latex}</div>
+</div>
+            </Draggable>
             ))}
         </div>
     );
