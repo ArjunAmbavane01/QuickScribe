@@ -31,7 +31,8 @@ export default function Home() {
     const [shapeFillColor, setShapeFillColor] = useState('#FFFFFF');
     const [isDrawingShape, setIsDrawingShape] = useState(false);
     const [shapeStartPoint, setShapeStartPoint] = useState<{ x: number; y: number } | null>(null);
-    const [canvasState, setCanvasState] = useState<ImageData | null>(null);
+    const [canvasStates, setCanvasStates] = useState<ImageData[]>([]);
+    const [currentStateIndex, setCurrentStateIndex] = useState(-1);
 
     useEffect(() => {
         if (latexExpression.length > 0 && window.MathJax) {
@@ -53,12 +54,16 @@ export default function Home() {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
                 canvas.style.background = 'black';
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight - canvas.offsetTop;
                 ctx.lineCap = 'round';
                 ctx.lineWidth = strokeSize;
+                
+                // Save initial blank canvas state
+                const initialState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                setCanvasStates([initialState]);
+                setCurrentStateIndex(0);
             }
         }
 
@@ -89,6 +94,53 @@ export default function Home() {
             const ctx = canvas.getContext('2d');
             if (ctx) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                saveCanvasState();
+            }
+        }
+    };
+
+    const saveCanvasState = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const newStates = canvasStates.slice(0, currentStateIndex + 1);
+                newStates.push(currentState);
+                
+                // Keep only the last 5 states
+                if (newStates.length > 6) {
+                    newStates.shift();
+                }
+                
+                setCanvasStates(newStates);
+                setCurrentStateIndex(newStates.length - 1);
+            }
+        }
+    };
+
+    const undo = () => {
+        if (currentStateIndex > 0) {
+            setCurrentStateIndex(currentStateIndex - 1);
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.putImageData(canvasStates[currentStateIndex - 1], 0, 0);
+                }
+            }
+        }
+    };
+
+    const redo = () => {
+        if (currentStateIndex < canvasStates.length - 1) {
+            setCurrentStateIndex(currentStateIndex + 1);
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.putImageData(canvasStates[currentStateIndex + 1], 0, 0);
+                }
             }
         }
     };
@@ -101,7 +153,6 @@ export default function Home() {
                 if (selectedShape) {
                     setIsDrawingShape(true);
                     setShapeStartPoint({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
-                    setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
                 } else {
                     ctx.beginPath();
                     ctx.moveTo(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
@@ -124,13 +175,14 @@ export default function Home() {
         }
     };
 
+
     const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                if (isDrawingShape && shapeStartPoint && canvasState) {
-                    ctx.putImageData(canvasState, 0, 0);
+                if (isDrawingShape && shapeStartPoint) {
+                    ctx.putImageData(canvasStates[currentStateIndex], 0, 0);
                     drawShapePreview(ctx, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
                 } else if (isDrawing) {
                     if (isErasing) {
@@ -147,6 +199,7 @@ export default function Home() {
         }
     };
 
+
     const stopDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (isDrawingShape && shapeStartPoint) {
             const canvas = canvasRef.current;
@@ -154,23 +207,17 @@ export default function Home() {
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     drawShape(ctx, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
-                    setSelectedShape(null); // Reset shape selection after drawing
+                    setSelectedShape(null);
+                    saveCanvasState();
                 }
             }
+        } else if (isDrawing) {
+            saveCanvasState();
         }
         setIsDrawing(false);
         setIsDrawingShape(false);
         setShapeStartPoint(null);
-        
-        // Update canvas state after drawing
-        const canvas = canvasRef.current;
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                setCanvasState(ctx.getImageData(0, 0, canvas.width, canvas.height));
-            }
-        }
-    }; 
+    };
 
     const drawShapePreview = (ctx: CanvasRenderingContext2D, endX: number, endY: number) => {
         if (!shapeStartPoint) return;
@@ -347,7 +394,23 @@ export default function Home() {
                     />
                 </div>
             </div>
-            {latexExpression && latexExpression.map((latex, index) => (
+            <div className="absolute bottom-4 left-4 flex space-x-2">
+            <button 
+                onClick={undo} 
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                disabled={currentStateIndex <= 0}
+            >
+                Undo
+            </button>
+            <button 
+                onClick={redo} 
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                disabled={currentStateIndex >= canvasStates.length - 1}
+            >
+                Redo
+            </button>
+        </div>
+        {latexExpression && latexExpression.map((latex, index) => (
                 <Draggable
                     key={index}
                     defaultPosition={latexPosition}
