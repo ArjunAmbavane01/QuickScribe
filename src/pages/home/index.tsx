@@ -2,8 +2,11 @@ import Header from '@/components/Header';
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import Draggable from 'react-draggable';
-import { Undo, Redo } from 'lucide-react';
+import { Undo, Redo, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+
 interface GeneratedResult {
     expression: string;
     answer: string;
@@ -35,7 +38,8 @@ export default function Home() {
     const [canvasStates, setCanvasStates] = useState<ImageData[]>([]);
     const [currentStateIndex, setCurrentStateIndex] = useState(-1);
     const [isCalculating, setIsCalculating] = useState(false);
-
+    const [error, setError] = useState<string | null>(null);
+    const { toast } = useToast();
     useEffect(() => {
         if (latexExpression.length > 0 && window.MathJax) {
             setTimeout(() => {
@@ -52,7 +56,7 @@ export default function Home() {
 
     useEffect(() => {
         const canvas = canvasRef.current;
-    
+
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
@@ -61,7 +65,7 @@ export default function Home() {
                 canvas.height = window.innerHeight - canvas.offsetTop;
                 ctx.lineCap = 'round';
                 ctx.lineWidth = strokeSize;
-                
+
                 // Save initial blank canvas state
                 const initialState = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 setCanvasStates([initialState]);
@@ -76,7 +80,7 @@ export default function Home() {
 
         script.onload = () => {
             window.MathJax.Hub.Config({
-                tex2jax: {inlineMath: [['$', '$'], ['\\(', '\\)']]},
+                tex2jax: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
             });
         };
 
@@ -87,7 +91,7 @@ export default function Home() {
 
 
     const renderLatexToCanvas = (expression: string, answer: string) => {
-        const latex = `\\(${expression} = ${answer}\\)`;
+        const latex = `\\(${expression.replace(/ /g, '\\,')} = ${answer.replace(/ /g, '\\,')}\\)`;
         setLatexExpression([...latexExpression, latex]);
 
         // Clear the main canvas
@@ -109,12 +113,12 @@ export default function Home() {
                 const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const newStates = canvasStates.slice(0, currentStateIndex + 1);
                 newStates.push(currentState);
-                
+
                 // Keep only the last 5 states
                 if (newStates.length > 6) {
                     newStates.shift();
                 }
-                
+
                 setCanvasStates(newStates);
                 setCurrentStateIndex(newStates.length - 1);
             }
@@ -320,7 +324,7 @@ export default function Home() {
     const runRoute = async () => {
         setIsCalculating(true);
         const canvas = canvasRef.current;
-    
+
         if (canvas) {
             try {
                 const response = await axios({
@@ -331,7 +335,7 @@ export default function Home() {
                         dict_of_vars: dictOfVars
                     }
                 });
-    
+
                 const resp = await response.data;
                 console.log('Response', resp);
                 resp.data.forEach((data: Response) => {
@@ -342,41 +346,49 @@ export default function Home() {
                         }));
                     }
                 });
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
-            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
+                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
 
-            for (let y = 0; y < canvas.height; y++) {
-                for (let x = 0; x < canvas.width; x++) {
-                    const i = (y * canvas.width + x) * 4;
-                    if (imageData.data[i + 3] > 0) { 
-                        minX = Math.min(minX, x);
-                        minY = Math.min(minY, y);
-                        maxX = Math.max(maxX, x);
-                        maxY = Math.max(maxY, y);
+                for (let y = 0; y < canvas.height; y++) {
+                    for (let x = 0; x < canvas.width; x++) {
+                        const i = (y * canvas.width + x) * 4;
+                        if (imageData.data[i + 3] > 0) {
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        }
                     }
                 }
+
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+
+                setLatexPosition({ x: centerX, y: centerY });
+                resp.data.forEach((data: Response) => {
+                    setTimeout(() => {
+                        setResult({
+                            expression: data.expr,
+                            answer: data.result
+                        });
+                    }, 1000);
+                });
+            } catch (error) {
+                console.error('Error during calculation:', error);
+                setError('An error occurred during calculation');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "An error occurred during calculation",
+                    duration: 4000,
+                });
+                setTimeout(() => setError(null), 4000)
+            } finally {
+                setIsCalculating(false);
             }
-
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-
-            setLatexPosition({ x: centerX, y: centerY });
-            resp.data.forEach((data: Response) => {
-                setTimeout(() => {
-                    setResult({
-                        expression: data.expr,
-                        answer: data.result
-                    });
-                }, 1000);
-            });
-        } catch (error) {
-            console.error('Error during calculation:', error);
-        } finally {
-            setIsCalculating(false);
         }
-    }
-};
+    };
 
     return (
         <div className="relative w-full h-screen overflow-hidden">
@@ -391,9 +403,9 @@ export default function Home() {
             />
             <div className="absolute top-4 left-0 w-full flex justify-center pointer-events-none">
                 <div className="pointer-events-auto">
-                    <Header 
-                        onRun={runRoute} 
-                        setColor={setColor} 
+                    <Header
+                        onRun={runRoute}
+                        setColor={setColor}
                         setStrokeSize={setStrokeSize}
                         setEraserSize={setEraserSize}
                         setIsErasing={setIsErasing}
@@ -408,12 +420,12 @@ export default function Home() {
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button 
-                                onClick={undo} 
+                            <button
+                                onClick={undo}
                                 className="flex items-center justify-center bg-gray-300 hover:bg-zinc-50 text-black font-bold py-2 px-2 rounded"
                                 disabled={currentStateIndex <= 0}
                             >
-                                <Undo/>
+                                <Undo />
                             </button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -424,12 +436,12 @@ export default function Home() {
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button 
-                                onClick={redo} 
+                            <button
+                                onClick={redo}
                                 className="flex items-center justify-center bg-gray-300 hover:bg-zinc-50 text-black font-bold py-2 px-2 rounded"
                                 disabled={currentStateIndex >= canvasStates.length - 1}
                             >
-                                <Redo/>
+                                <Redo />
                             </button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -438,18 +450,29 @@ export default function Home() {
                     </Tooltip>
                 </TooltipProvider>
             </div>
-        {latexExpression && latexExpression.map((latex, index) => (
+            {latexExpression && latexExpression.map((latex, index) => (
                 <Draggable
-                key={index}
-                defaultPosition={latexPosition}
-                onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
-                nodeRef={nodeRef}
-            >
-                <div className="absolute bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-3 shadow-lg" ref={nodeRef}>
-    <div className="text-white latex-content">{latex}</div>
-</div>
-            </Draggable>
+                    key={index}
+                    defaultPosition={latexPosition}
+                    onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
+                    nodeRef={nodeRef}
+                >
+                    <div className="absolute bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-3 shadow-lg" ref={nodeRef}>
+                        <div className="text-white latex-content">{latex}</div>
+                    </div>
+                </Draggable>
             ))}
+            {error && (
+                <div className="absolute bottom-4 right-4 bg-zinc-50 text-md rounded-lg shadow-lg">
+                    <Alert variant="destructive">
+                        <AlertCircle className="h-5 w-5" />
+                        <AlertDescription className='text-lg'>
+                            {error}
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
+
         </div>
     );
 }

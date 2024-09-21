@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({
     setSelectedShape,
     setShapeOutlineColor,
     setShapeFillColor,
-    isCalculating
+    isCalculating,
 }) => {
 
     return (
