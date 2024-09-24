@@ -18,6 +18,16 @@ interface Response {
     assign: boolean;
 }
 
+interface TextElement {
+    id: string;
+    text: string;
+    x: number;
+    y: number;
+    fontSize: number;
+    fontFamily: string;
+    color: string;
+}
+
 export default function Home() {
     const nodeRef = useRef(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -39,7 +49,18 @@ export default function Home() {
     const [currentStateIndex, setCurrentStateIndex] = useState(-1);
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isTextSelected, setIsTextSelected] = useState(false);
+    const [textSize, setTextSize] = useState(28);
+    const [textColor, setTextColor] = useState('#FFFFFF');
+    const [fontFamily, setFontFamily] = useState('Caveat');
+    const [textInputPosition, setTextInputPosition] = useState({ x: 0, y: 0 });
+    const textInputRef = useRef<HTMLTextAreaElement>(null);
+    const [textElements, setTextElements] = useState<TextElement[]>([]);
+    // const [activeTextId, setActiveTextId] = useState<string | null>(null);
+
+
     const { toast } = useToast();
+
     useEffect(() => {
         if (latexExpression.length > 0 && window.MathJax) {
             setTimeout(() => {
@@ -89,14 +110,26 @@ export default function Home() {
         };
     }, []);
 
+    useEffect(() => {
+        //to load the Caveat font
+        const link = document.createElement('link');
+        link.href = 'https://fonts.googleapis.com/css2?family=Caveat&display=swap';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
+
+        return () => {
+            document.head.removeChild(link);
+        };
+    }, []);
+
 
     const renderLatexToCanvas = (expression: string, answer: any) => {
-        const latex = typeof answer === 'string' 
-        ? answer.split(' ').join('\\ ') 
-        : `\\(${expression.replace(/ /g, '\\,')} = ${String(answer).replace(/ /g, '\\,')}\\)`; 
-    
+        const latex = typeof answer === 'string'
+            ? answer.split(' ').join('\\ ')
+            : `\\(${expression.replace(/ /g, '\\,')} = ${String(answer).replace(/ /g, '\\,')}\\)`;
+
         setLatexExpression([...latexExpression, latex]);
-    
+
         // Clear the main canvas
         const canvas = canvasRef.current;
         if (canvas) {
@@ -107,7 +140,7 @@ export default function Home() {
             }
         }
     };
-    
+
 
     const saveCanvasState = () => {
         const canvas = canvasRef.current;
@@ -160,7 +193,22 @@ export default function Home() {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-                if (selectedShape) {
+                if (isTextSelected) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    setTextInputPosition({ x, y });
+                    if (textInputRef.current) {
+                        textInputRef.current.style.left = `${x}px`;
+                        textInputRef.current.style.top = `${y}px`;
+                        textInputRef.current.style.display = 'block';
+                        setTimeout(() => {
+                            if (textInputRef.current) {
+                                textInputRef.current.focus();
+                            }
+                        }, 0);
+                    }
+                } else if (selectedShape) {
                     setIsDrawingShape(true);
                     setShapeStartPoint({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
                 } else {
@@ -325,6 +373,68 @@ export default function Home() {
         ctx.restore();
     };
 
+    const handleTextInputBlur = () => {
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx && textInputRef.current) {
+                const text = textInputRef.current.value;
+                const id = Date.now().toString();
+                setTextElements(prev => [...prev, {
+                    id,
+                    text,
+                    x: textInputPosition.x,
+                    y: textInputPosition.y,
+                    fontSize: textSize,
+                    fontFamily,
+                    color: textColor
+                }]);
+                textInputRef.current.style.display = 'none';
+                textInputRef.current.value = '';
+                setIsTextSelected(false);
+            }
+        }
+    };
+
+    const handleTextDragStop = (id: string, e: any, data: any) => {
+        setTextElements(prev => prev.map(el =>
+            el.id === id ? { ...el, x: data.x, y: data.y } : el
+        ));
+    };
+
+    const renderTextElements = () => {
+        return textElements.map(el => (
+            <Draggable
+                key={el.id}
+                position={{ x: el.x, y: el.y }}
+                onStop={(e, data) => handleTextDragStop(el.id, e, data)}
+                nodeRef={nodeRef}
+            >
+                <div
+                    style={{
+                        position: 'absolute',
+                        fontSize: `${el.fontSize}px`,
+                        fontFamily: el.fontFamily,
+                        color: el.color,
+                        cursor: 'grab',
+                        userSelect: 'none'
+                    }}
+                    ref={nodeRef}
+                >
+                    {el.text}
+                </div>
+            </Draggable>
+        ));
+    };
+
+
+    const handleTextInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleTextInputBlur();
+        }
+    };
+
     const runRoute = async () => {
         setIsCalculating(true);
         const canvas = canvasRef.current;
@@ -405,6 +515,20 @@ export default function Home() {
                 onMouseUp={stopDrawing}
                 onMouseOut={stopDrawing}
             />
+            {renderTextElements()}
+            <textarea
+                ref={textInputRef}
+                className="absolute hidden p-0 border-none outline-none bg-transparent text-white resize-none overflow-hidden"
+                style={{
+                    fontSize: `${textSize}px`,
+                    fontFamily: fontFamily,
+                    color: textColor,
+                    minWidth: '50px',
+                    minHeight: `${textSize}px`,
+                }}
+                onBlur={handleTextInputBlur}
+                onKeyDown={handleTextInputKeyDown}
+            />
             <div className="absolute top-4 left-0 w-full flex justify-center pointer-events-none">
                 <div className="pointer-events-auto">
                     <Header
@@ -417,6 +541,10 @@ export default function Home() {
                         setShapeOutlineColor={setShapeOutlineColor}
                         setShapeFillColor={setShapeFillColor}
                         isCalculating={isCalculating}
+                        setIsTextSelected={setIsTextSelected}
+                        setTextSize={setTextSize}
+                        setTextColor={setTextColor}
+                        setFontFamily={setFontFamily}
                     />
                 </div>
             </div>
