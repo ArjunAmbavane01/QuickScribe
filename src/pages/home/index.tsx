@@ -90,10 +90,13 @@ export default function Home() {
     }, []);
 
 
-    const renderLatexToCanvas = (expression: string, answer: string) => {
-        const latex = `\\(${expression.replace(/ /g, '\\,')} = ${answer.replace(/ /g, '\\,')}\\)`;
+    const renderLatexToCanvas = (expression: string, answer: any) => {
+        const latex = typeof answer === 'string' 
+        ? answer.split(' ').join('\\ ') 
+        : `\\(${expression.replace(/ /g, '\\,')} = ${String(answer).replace(/ /g, '\\,')}\\)`; 
+    
         setLatexExpression([...latexExpression, latex]);
-
+    
         // Clear the main canvas
         const canvas = canvasRef.current;
         if (canvas) {
@@ -104,6 +107,7 @@ export default function Home() {
             }
         }
     };
+    
 
     const saveCanvasState = () => {
         const canvas = canvasRef.current;
