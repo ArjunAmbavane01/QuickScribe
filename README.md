@@ -1,50 +1,83 @@
-# React + TypeScript + Vite
+# QuickScribe: Interactive Mathematical Whiteboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![MathScribe Logo](./src/assets/image1.png)
 
-Currently, two official plugins are available:
+# OUTPUT -
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![MathScribe Logo](./src/assets/image2.png)
 
-## Expanding the ESLint configuration
+MathScribe is an innovative web application that brings the power of a smart calculator to your digital canvas. Draw, write, or sketch your mathematical problems, and let MathScribe interpret and solve them for you!
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## 🌟 Features
 
-- Configure the top-level `parserOptions` property like this:
+- ✏️ **Freehand Drawing**: Write or draw your mathematical expressions naturally.
+- 🔢 **Intelligent Recognition**: Powered by Google Gemini AI to interpret your handwritten input.
+- 🧮 **Real-time Calculation**: Get instant results for your mathematical problems.
+- 🎨 **Shape Tools**: Easily add geometric shapes to your expressions.
+- 📝 **Text Input**: Type complex equations with customizable font styles.
+- ↩️ **Undo/Redo**: Mistake-proof your work with easy reversibility.
+- 🖼️ **Draggable Results**: Flexibly position your calculated results on the canvas.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## 🚀 Getting Started
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Prerequisites
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+- Node.js (v14 or later)
+- npm or yarn
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+### Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/ArjunAmbavane01/QuickScribe.git 
+   ```
+
+2. Navigate to the project directory:
+   ```
+   cd QuickScribe
+   ```
+
+3. Install dependencies:
+   ```
+   npm install
+   ```
+
+4. Set up environment variables:
+   Create a `.env.local` file in the root directory and add:
+   ```
+   VITE_API_URL=http://localhost:8900
+   ```
+
+5. Start the development server:
+   ```
+   npm run dev
+   ```
+
+## 💻 Usage
+
+1. Open MathScribe in your web browser.
+2. Use the toolbar to select your preferred input method (pen, eraser, shapes, or text).
+3. Write or draw your mathematical expression on the canvas.
+4. Click the "Run" button to process your input.
+5. View the result displayed on the canvas, which you can drag to reposition.
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React with TypeScript
+- **Styling**: Tailwind CSS
+- **Icons**: Lucide React
+- **Math Rendering**: MathJax
+- **API Requests**: Axios
+- **AI Integration**: Google Gemini API
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Made with ❤️ By Arjun Ambavane
